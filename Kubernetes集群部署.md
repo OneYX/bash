@@ -1,7 +1,7 @@
-### 1. 关闭交换分区
+##### 1. 关闭交换分区
 - `swapoff -a`
 - `sed -i '/swap/s/^/#/' /etc/fstab`
-### 2. 安装Docker
+##### 2. 安装Docker
 `curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun` or 
 ``` bash
 # step 1: 安装必要的一些系统工具
@@ -31,7 +31,7 @@ sudo service docker start
 # Step2 : 安装指定版本的Docker-CE: (VERSION 例如上面的 17.03.0.ce.1-1.el7.centos)
 # sudo yum -y install docker-ce-[VERSION]
 ```
-### 3. 安装Kubernetes
+##### 3. 安装Kubernetes
 ``` bash
 cat <<EOF > /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -46,3 +46,46 @@ setenforce 0
 yum install -y kubelet kubeadm kubectl
 systemctl enable kubelet && systemctl start kubelet
 ```
+##### 4. 拉取镜像
+- k8s-images.sh
+``` bash
+#!/bin/bash
+if [ x$1 == x ]; then
+  echo 'version is not null'
+  exit
+fi
+
+images=$(kubeadm config images list --kubernetes-version $1)
+#or
+#images=$(cat <<EOF
+# gcr.io/google-containers/federation-controller-manager-arm64:v1.3.1-beta.1
+# gcr.io/google-containers/federation-controller-manager-arm64:v1.3.1-beta.1
+# gcr.io/google-containers/federation-controller-manager-arm64:v1.3.1-beta.1
+#EOF
+#)
+
+eval $(echo ${images}|
+        sed 's/k8s\.gcr\.io/gcr.mirrors.ustc.edu.cn\/google-containers/g;s/gcr\.io/gcr.mirrors.ustc.edu.cn/g;s/\//\./g;s/ /\n/g;s/gcr.mirrors.ustc.edu.cn\./gcr.mirrors.ustc.edu.cn\//g' |
+        uniq |
+        awk '{print "docker pull "$1";"}'
+       )
+
+# this code will retag all of gcr.mirrors.ustc.edu.cn's image from local  e.g. gcr.mirrors.ustc.edu.cn/google-containers.federation-controller-manager-arm64:v1.3.1-beta.1
+# to gcr.io/google-containers/federation-controller-manager-arm64:v1.3.1-beta.1
+# k8s.gcr.io/{image}/{tag} <==> gcr.io/google-containers/{image}/{tag} <==> gcr.mirrors.ustc.edu.cn/google-containers.{image}/{tag}
+
+for img in $(docker images --format "{{.Repository}}:{{.Tag}}"| grep "gcr.mirrors.ustc.edu.cn"); do
+  n=$(echo ${img}| awk -F'[/.:]' '{printf "gcr.io/%s",$2}')
+  image=$(echo ${img}| awk -F'[/.:]' '{printf "/%s",$3}')
+  tag=$(echo ${img}| awk -F'[:]' '{printf ":%s",$2}')
+  docker tag $img "${n}${image}${tag}"
+  [[ ${n} == "gcr.io/google-containers" ]] && docker tag $img "k8s.gcr.io${image}${tag}"
+  docker rmi $img
+done
+```
+##### 5. 初始化主节点
+`kubeadm init --kubernetes-version=v1.13.0 --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12 --ignore-preflight-errors=Swap` #--apiserver-advertise-address=192.168.56.101
+##### 6. 部署网络
+`kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml`
+##### 7. 节点加入集群
+`kubeadm join ...`
