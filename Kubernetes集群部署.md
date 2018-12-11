@@ -65,7 +65,7 @@ images=$(kubeadm config images list --kubernetes-version $1)
 #)
 
 eval $(echo ${images}|
-        sed 's/k8s\.gcr\.io/gcr.mirrors.ustc.edu.cn\/google-containers/g;s/gcr\.io/gcr.mirrors.ustc.edu.cn/g;s/\//\./g;s/ /\n/g;s/gcr.mirrors.ustc.edu.cn\./gcr.mirrors.ustc.edu.cn\//g' |
+        sed 's/k8s\.gcr\.io/gcr.mirrors.ustc.edu.cn\/google-containers/g;s/gcr\.io/gcr.mirrors.ustc.edu.cn/g;s/ /\n/g;s/gcr.mirrors.ustc.edu.cn\./gcr.mirrors.ustc.edu.cn\//g' |
         uniq |
         awk '{print "docker pull "$1";"}'
        )
