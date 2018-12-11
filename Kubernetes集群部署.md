@@ -75,8 +75,8 @@ eval $(echo ${images}|
 # k8s.gcr.io/{image}/{tag} <==> gcr.io/google-containers/{image}/{tag} <==> gcr.mirrors.ustc.edu.cn/google-containers.{image}/{tag}
 
 for img in $(docker images --format "{{.Repository}}:{{.Tag}}"| grep "gcr.mirrors.ustc.edu.cn"); do
-  n=$(echo ${img}| awk -F'[/.:]' '{printf "gcr.io/%s",$2}')
-  image=$(echo ${img}| awk -F'[/.:]' '{printf "/%s",$3}')
+  n=$(echo ${img}| awk -F'[/]' '{printf "gcr.io/%s",$2}')
+  image=$(echo ${img}| awk -F'[/:]' '{printf "/%s",$3}')
   tag=$(echo ${img}| awk -F'[:]' '{printf ":%s",$2}')
   docker tag $img "${n}${image}${tag}"
   [[ ${n} == "gcr.io/google-containers" ]] && docker tag $img "k8s.gcr.io${image}${tag}"
