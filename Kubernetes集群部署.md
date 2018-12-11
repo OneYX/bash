@@ -84,7 +84,8 @@ for img in $(docker images --format "{{.Repository}}:{{.Tag}}"| grep "gcr.mirror
 done
 ```
 ##### 5. 初始化主节点
-`kubeadm init --kubernetes-version=v1.13.0 --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12 --ignore-preflight-errors=Swap` #--apiserver-advertise-address=192.168.56.101
+- `systemctl stop firewalld`
+- `kubeadm init --kubernetes-version=v1.13.0 --pod-network-cidr=10.244.0.0/16 --service-cidr=10.96.0.0/12 --ignore-preflight-errors=Swap` #--apiserver-advertise-address=192.168.56.101
 ##### 6. 部署网络
 `kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml`
 ##### 7. 节点加入集群
